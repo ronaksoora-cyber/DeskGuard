@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DeskGuard – Library Seat Booking</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #f1f5f9; min-height: 100vh; }
+  .header { background: #1e293b; border-bottom: 2px solid #334155; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-title { font-weight: 800; font-size: 20px; color: #38bdf8; letter-spacing: -0.5px; }
+  .logo-sub { font-size: 11px; color: #64748b; }
+  .nav-btns { display: flex; gap: 8px; }
+  .nav-btn { padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.15s; }
+  .nav-btn.active { background: #38bdf8; color: #0f172a; }
+  .nav-btn.inactive { background: #334155; color: #94a3b8; }
+  .stats-bar { display: flex; gap: 16px; padding: 10px 20px; background: #1e293b; border-bottom: 1px solid #334155; flex-wrap: wrap; align-items: center; }
+  .stat-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #94a3b8; }
+  .stat-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .stat-note { margin-left: auto; font-size: 11px; color: #475569; }
+  .main { padding: 20px; }
+  .legend { display: flex; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #94a3b8; }
+  .legend-box { width: 14px; height: 14px; border-radius: 3px; }
+  .desk-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; max-width: 600px; }
+  .desk-card { border-radius: 10px; padding: 12px 8px; cursor: pointer; border: 3px solid transparent; transition: transform 0.1s, border-color 0.1s; text-align: center; }
+  .desk-card:hover { transform: scale(1.04); }
+  .desk-card.selected { border-color: #f8fafc; transform: scale(1.06); }
+  .desk-icon { font-size: 18px; }
+  .desk-num { font-size: 11px; font-weight: 700; color: #fff; margin-top: 2px; }
+  .desk-student { font-size: 9px; color: rgba(255,255,255,0.85); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .desk-timer { font-size: 9px; background: rgba(0,0,0,0.3); border-radius: 4px; padding: 1px 4px; margin-top: 3px; color: #fff; display: inline-block; }
+  .action-panel { margin-top: 20px; background: #1e293b; border-radius: 12px; padding: 16px; max-width: 600px; border: 1px solid #334155; }
+  .action-title { font-weight: 700; margin-bottom: 10px; font-size: 14px; }
+  .action-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .action-input { padding: 7px 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #f1f5f9; font-size: 13px; flex: 1; min-width: 140px; }
+  .btn { padding: 7px 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; font-size: 13px; transition: opacity 0.15s; }
+  .btn:hover { opacity: 0.85; }
+  .btn-green { background: #16a34a; color: #fff; }
+  .btn-yellow { background: #d97706; color: #fff; }
+  .btn-gray { background: #475569; color: #fff; }
+  .btn-red { background: #dc2626; color: #fff; }
+  .btn-outline-green { background: rgba(22,163,74,0.15); color: #16a34a; border: 1px solid rgba(22,163,74,0.3) !important; }
+  .lib-title { font-weight: 700; font-size: 16px; margin-bottom: 14px; color: #38bdf8; }
+  .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+  .lib-card { background: #1e293b; border-radius: 10px; padding: 12px; }
+  .lib-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .lib-card-name { font-weight: 700; font-size: 14px; }
+  .badge { font-size: 11px; font-weight: 700; border-radius: 20px; padding: 2px 8px; }
+  .lib-info { font-size: 12px; color: #64748b; margin-bottom: 8px; }
+  .lib-btn { width: 100%; padding: 6px 0; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; }
+  .log-box { margin-top: 24px; background: #1e293b; border-radius: 12px; padding: 14px; border: 1px solid #334155; }
+  .log-title { font-weight: 700; font-size: 13px; margin-bottom: 8px; color: #38bdf8; }
+  .log-entry { font-size: 12px; padding: 3px 0; border-bottom: 1px solid #0f172a; }
+  .log-time { color: #38bdf8; margin-right: 8px; }
+  .log-empty { color: #475569; font-size: 12px; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .modal-box { background: #1e293b; border-radius: 16px; padding: 28px; max-width: 320px; width: 90%; text-align: center; border: 2px solid #d97706; }
+  .modal-icon { font-size: 36px; margin-bottom: 8px; }
+  .modal-title { font-weight: 800; font-size: 18px; margin-bottom: 6px; }
+  .modal-text { color: #94a3b8; font-size: 13px; margin-bottom: 18px; }
+  .modal-btns { display: flex; gap: 10px; justify-content: center; }
+  .modal-btn { padding: 9px 18px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; font-size: 14px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <span style="font-size:22px">📚</span>
+    <div>
+      <div class="logo-title">DeskGuard</div>
+      <div class="logo-sub">Library Seat Anti-Hoarding System</div>
+    </div>
+  </div>
+  <div class="nav-btns">
+    <button class="nav-btn active" id="btnMap" onclick="switchView('map')">🗺 Live Map</button>
+    <button class="nav-btn inactive" id="btnDash" onclick="switchView('dashboard')">🛡 Librarian</button>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-item"><span class="stat-dot" style="background:#16a34a"></span> Free: <strong id="statFree">20</strong></div>
+  <div class="stat-item"><span class="stat-dot" style="background:#dc2626"></span> Occupied: <strong id="statOccupied">0</strong></div>
+  <div class="stat-item"><span class="stat-dot" style="background:#d97706"></span> Away: <strong id="statAway">0</strong></div>
+  <div class="stat-item"><span class="stat-dot" style="background:#6b7280"></span> Abandoned: <strong id="statAbandoned">0</strong></div>
+  <div class="stat-note">⚡ Server sweep every sec • Demo idle = 30s</div>
+</div>
+
+<div class="main">
+  <div id="viewMap">
+    <div class="legend">
+      <div class="legend-item"><span class="legend-box" style="background:#16a34a"></span> Free</div>
+      <div class="legend-item"><span class="legend-box" style="background:#dc2626"></span> Occupied</div>
+      <div class="legend-item"><span class="legend-box" style="background:#d97706"></span> Away</div>
+      <div class="legend-item"><span class="legend-box" style="background:#6b7280"></span> Abandoned</div>
+      <span style="font-size:12px;color:#475569">• Click desk to interact</span>
+    </div>
+    <div class="desk-grid" id="deskGrid"></div>
+    <div class="action-panel hidden" id="actionPanel">
+      <div class="action-title" id="actionTitle"></div>
+      <div class="action-row" id="actionContent"></div>
+    </div>
+  </div>
+
+  <div id="viewDashboard" class="hidden">
+    <div class="lib-title">🛡 Librarian Dashboard</div>
+    <div class="lib-grid" id="libGrid"></div>
+  </div>
+
+  <div class="log-box">
+    <div class="log-title">⚡ Server Activity Log</div>
+    <div id="logList"><div class="log-empty">No activity yet. Click a desk to begin.</div></div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-icon">🔔</div>
+    <div class="modal-title">Still here?</div>
+    <div class="modal-text" id="modalText"></div>
+    <div class="modal-btns">
+      <button class="modal-btn btn-green" onclick="handleStillHere()">✅ Yes, I'm here</button>
+      <button class="modal-btn btn-red" onclick="handleFreeFromModal()">🚪 Leave</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOTAL = 20;
+const DEMO_IDLE = 30;
+const AWAY_MAX = 20 * 60;
+const NAMES = ["Ronak S","Priya M","Ankit V","Divya K","Rahul J","Sneha R","Arjun P","Kavya N","Mohit G","Riya T"];
+const STATUS = {
+  free:      { bg:"#16a34a", label:"Free",      icon:"🪑" },
+  occupied:  { bg:"#dc2626", label:"Occupied",   icon:"👤" },
+  away:      { bg:"#d97706", label:"Away",       icon:"⏳" },
+  abandoned: { bg:"#6b7280", label:"Abandoned",  icon:"🚫" },
+};
+
+let desks = Array.from({length: TOTAL}, (_,i) => ({
+  id: i+1, status:"free", student:null,
+  checkInTime:null, awayStart:null,
+  awayTimer:null, idleTimer:null, promptShown:false
+}));
+let selectedId = null;
+let promptDeskId = null;
+let logs = [];
+
+function fmt(sec) {
+  if(sec==null) return "--";
+  return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0");
+}
+function rnd(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function addLog(msg) {
+  const t = new Date().toLocaleTimeString();
+  logs.unshift({t, msg});
+  if(logs.length>20) logs.pop();
+  renderLog();
+}
+
+function sweep() {
+  const now = Date.now();
+  desks = desks.map(d => {
+    if(d.status==="free"||d.status==="abandoned") return d;
+    let u = {...d};
+    if(d.status==="occupied") {
+      const el = Math.floor((now - d.checkInTime)/1000);
+      u.idleTimer = Math.max(0, DEMO_IDLE - el);
+      if(u.idleTimer===0 && !d.promptShown) {
+        u.promptShown = true;
+        showPrompt(d.id);
+      }
+    }
+    if(d.status==="away") {
+      const el = Math.floor((now - d.awayStart)/1000);
+      u.awayTimer = Math.max(0, AWAY_MAX - el);
+      if(u.awayTimer===0) {
+        u.status="abandoned"; u.student=null;
+        addLog(`Desk ${d.id} auto-abandoned (Away timer expired)`);
+      }
+    }
+    return u;
+  });
+  renderAll();
+}
+
+function checkIn(id) {
+  const inp = document.getElementById("nameInput");
+  const name = (inp ? inp.value.trim() : "") || rnd(NAMES);
+  desks = desks.map(d => d.id===id ? {...d, status:"occupied", student:name,
+    checkInTime:Date.now(), awayTimer:null, idleTimer:DEMO_IDLE, promptShown:false} : d);
+  addLog(`Desk ${id} checked in by ${name}`);
+  selectedId=null; renderAll();
+}
+function markAway(id) {
+  desks = desks.map(d => d.id===id ? {...d, status:"away", awayStart:Date.now(), awayTimer:AWAY_MAX} : d);
+  addLog(`Desk ${id} marked Away (20 min timer started)`);
+  selectedId=null; renderAll();
+}
+function markReturn(id) {
+  desks = desks.map(d => d.id===id ? {...d, status:"occupied", awayTimer:null, awayStart:null,
+    checkInTime:Date.now(), promptShown:false} : d);
+  addLog(`Desk ${id} — student returned`);
+  selectedId=null; renderAll();
+}
+function freeDesk(id) {
+  desks = desks.map(d => d.id===id ?
+    {id:d.id,status:"free",student:null,checkInTime:null,awayStart:null,awayTimer:null,idleTimer:null,promptShown:false} : d);
+  addLog(`Desk ${id} freed`);
+  selectedId=null; hideModal(); renderAll();
+}
+function showPrompt(id) {
+  promptDeskId = id;
+  document.getElementById("modalText").textContent =
+    `Desk ${id} has been idle. Confirm presence or desk will be freed.`;
+  document.getElementById("modalOverlay").classList.remove("hidden");
+}
+function hideModal() {
+  document.getElementById("modalOverlay").classList.add("hidden");
+  promptDeskId = null;
+}
+function handleStillHere() {
+  if(!promptDeskId) return;
+  desks = desks.map(d => d.id===promptDeskId ?
+    {...d, checkInTime:Date.now(), idleTimer:DEMO_IDLE, promptShown:false} : d);
+  addLog(`Desk ${promptDeskId} — student confirmed presence`);
+  hideModal(); renderAll();
+}
+function handleFreeFromModal() { if(promptDeskId) freeDesk(promptDeskId); }
+
+function selectDesk(id) {
+  selectedId = selectedId===id ? null : id;
+  renderAll();
+}
+function switchView(v) {
+  document.getElementById("viewMap").classList.toggle("hidden", v!=="map");
+  document.getElementById("viewDashboard").classList.toggle("hidden", v!=="dashboard");
+  document.getElementById("btnMap").className = "nav-btn "+(v==="map"?"active":"inactive");
+  document.getElementById("btnDash").className = "nav-btn "+(v==="dashboard"?"active":"inactive");
+  renderAll();
+}
+function renderAll() { renderStats(); renderGrid(); renderAction(); renderDashboard(); }
+
+function renderStats() {
+  const c = s => desks.filter(d=>d.status===s).length;
+  document.getElementById("statFree").textContent = c("free");
+  document.getElementById("statOccupied").textContent = c("occupied");
+  document.getElementById("statAway").textContent = c("away");
+  document.getElementById("statAbandoned").textContent = c("abandoned");
+}
+function renderGrid() {
+  document.getElementById("deskGrid").innerHTML = desks.map(d => {
+    const s = STATUS[d.status];
+    const sel = selectedId===d.id ? " selected" : "";
+    let timer = "";
+    if(d.status==="away" && d.awayTimer!=null) timer = `<div class="desk-timer">⏱ ${fmt(d.awayTimer)}</div>`;
+    if(d.status==="occupied" && d.idleTimer!=null) timer = `<div class="desk-timer">🕐 ${fmt(d.idleTimer)}</div>`;
+    return `<div class="desk-card${sel}" style="background:${s.bg}" onclick="selectDesk(${d.id})">
+      <div class="desk-icon">${s.icon}</div>
+      <div class="desk-num">D${d.id}</div>
+      ${d.student ? `<div class="desk-student">${d.student}</div>` : ""}
+      ${timer}
+    </div>`;
+  }).join("");
+}
+function renderAction() {
+  const panel = document.getElementById("actionPanel");
+  if(!selectedId) { panel.classList.add("hidden"); return; }
+  const d = desks.find(x=>x.id===selectedId);
+  const s = STATUS[d.status];
+  document.getElementById("actionTitle").innerHTML =
+    `📋 Desk ${d.id} — <span style="color:${s.bg}">${s.label}</span>`+
+    (d.student?` <span style="color:#94a3b8;font-weight:400">• ${d.student}</span>`:"");
+  let html = "";
+  if(d.status==="free"||d.status==="abandoned")
+    html = `<input id="nameInput" class="action-input" placeholder="Student name (or leave blank)">
+      <button class="btn btn-green" onclick="checkIn(${d.id})">📱 QR Check-In</button>`;
+  else if(d.status==="occupied")
+    html = `<button class="btn btn-yellow" onclick="markAway(${d.id})">⏳ Mark Away</button>
+      <button class="btn btn-gray" onclick="freeDesk(${d.id})">🔓 Free Desk</button>`;
+  else if(d.status==="away")
+    html = `<button class="btn btn-green" onclick="markReturn(${d.id})">✅ I'm Back</button>
+      <button class="btn btn-red" onclick="freeDesk(${d.id})">🚫 Force Free</button>`;
+  document.getElementById("actionContent").innerHTML = html;
+  panel.classList.remove("hidden");
+}
+function renderDashboard() {
+  document.getElementById("libGrid").innerHTML = desks.map(d => {
+    const s = STATUS[d.status];
+    let info = d.student ? `Student: ${d.student}` : "Vacant";
+    if(d.status==="away"&&d.awayTimer!=null) info+=` <span style="color:#d97706">• Away: ${fmt(d.awayTimer)}</span>`;
+    if(d.status==="occupied"&&d.idleTimer!=null) info+=` <span style="color:#94a3b8">• ${fmt(d.idleTimer)}</span>`;
+    let btn = "";
+    if(d.status==="abandoned"||d.status==="away")
+      btn = `<button class="lib-btn btn-gray" style="color:#f1f5f9" onclick="freeDesk(${d.id})">🔄 Reset Desk</button>`;
+    else if(d.status==="free")
+      btn = `<button class="lib-btn btn-outline-green" onclick="switchView('map');selectDesk(${d.id})">➕ Check In Student</button>`;
+    return `<div class="lib-card" style="border:1px solid ${s.bg}44">
+      <div class="lib-card-header">
+        <span class="lib-card-name">Desk ${d.id}</span>
+        <span class="badge" style="background:${s.bg};color:#fff">${s.label}</span>
+      </div>
+      <div class="lib-info">${info}</div>${btn}
+    </div>`;
+  }).join("");
+}
+function renderLog() {
+  const el = document.getElementById("logList");
+  if(!logs.length) { el.innerHTML='<div class="log-empty">No activity yet.</div>'; return; }
+  el.innerHTML = logs.map((l,i) =>
+    `<div class="log-entry" style="color:${i===0?"#f1f5f9":"#64748b"}">
+      <span class="log-time">${l.t}</span>${l.msg}
+    </div>`).join("");
+}
+
+renderAll();
+setInterval(sweep, 1000);
+</script>
+</body>
+</html>
